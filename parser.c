@@ -1,220 +1,86 @@
 #include "shell.h"
 
 /**
- * swap_char - Swap two characters in a string.
- *
- * @input:  Input string.
- * @bool:   Boolean indicating whether to swap the characters.
- *
- * Return:
- *   The input string with the characters swapped, or the original input string if `bool` is false.
+ * Determines if a file is an executable command.
+ * 
+ * @param info: The info struct.
+ * @param path: Path to the file.
+ * @return: 1 if true, 0 otherwise.
  */
-char *swap_char(char *input, int bool)
+int is_cmd(info_t *info, char *path)
 {
-	int i;
+    struct stat st;
 
-	if (bool == 0)
-	{
-		for (i = 0; input[i]; i++)
-		{
-			if (input[i] == '|')
-			{
-				if (input[i + 1] != '|')
-					input[i] = 16;
-				else
-					i++;
-			}
+    (void)info;  // Ignore the info struct
+    if (!path || stat(path, &st))
+        return (0);
 
-			if (input[i] == '&')
-			{
-				if (input[i + 1] != '&')
-					input[i] = 12;
-				else
-					i++;
-			}
-		}
-	}
-	else
-	{
-		for (i = 0; input[i]; i++)
-		{
-			input[i] = (input[i] == 16 ? '|' : input[i]);
-			input[i] = (input[i] == 12 ? '&' : input[i]);
-		}
-	}
-	return (input);
+    if (st.st_mode & S_IFREG)  // Check if the file is a regular file
+    {
+        return (1);
+    }
+    return (0);
 }
 
 /**
- * add_nodes - Add nodes to a separated list and a line list.
- *
- * @head_s: Pointer to the head of the separated list.
- * @head_l: Pointer to the head of the line list.
- * @input:  Input string.
- *
- * Return:
- *   Void.
+ * Duplicates characters from a specified range.
+ * 
+ * @param pathstr: The PATH string.
+ * @param start: Starting index.
+ * @param stop: Stopping index.
+ * @return: Pointer to a new buffer containing the duplicated characters.
  */
-void add_nodes(sep_list **head_s, line_list **head_l, char *input)
+char *dup_chars(char *pathstr, int start, int stop)
 {
-	int i;
-	char *line;
+    static char buf[1024];
+    int i = 0, k = 0;
 
-	input = swap_char(input, 0);
-
-	for (i = 0; input[i]; i++)
-	{
-		if (input[i] == ';')
-			add_sep_node_end(head_s, input[i]);
-
-		if (input[i] == '|' || input[i] == '&')
-		{
-			add_sep_node_end(head_s, input[i]);
-			i++;
-		}
-	}
-
-	line = _strtok(input, ";|&");
-	do {
-		line = swap_char(line, 1);
-		add_line_node_end(head_l, line);
-		line = _strtok(NULL, ";|&");
-	} while (line != NULL);
-
+    for (k = 0, i = start; i < stop; i++)
+        if (pathstr[i] != ':')
+            buf[k++] = pathstr[i];
+    buf[k] = 0;
+    return (buf);
 }
 
 /**
- * go_next - Move to the next node in the separated list and line list.
- *
- * @list_s: Pointer to the current node in the separated list.
- * @list_l: Pointer to the current node in the line list.
- * @datash: Pointer to the data structure.
- *
- * Return:
- *   Void.
+ * Finds the full path of a command in the PATH string.
+ * 
+ * @param info: The info struct.
+ * @param pathstr: The PATH string.
+ * @param cmd: The command to find.
+ * @return: Full path of the command if found, or NULL.
  */
-void go_next(sep_list **list_s, line_list **list_l, data_shell *datash)
+char *find_path(info_t *info, char *pathstr, char *cmd)
 {
-	int loop_sep;
-	sep_list *ls_s;
-	line_list *ls_l;
+    int i = 0, curr_pos = 0;
+    char *path;
 
-	loop_sep = 1;
-	ls_s = *list_s;
-	ls_l = *list_l;
-
-	while (ls_s != NULL && loop_sep)
-	{
-		if (datash->status == 0)
-		{
-			if (ls_s->separator == '&' || ls_s->separator == ';')
-				loop_sep = 0;
-			if (ls_s->separator == '|')
-				ls_l = ls_l->next, ls_s = ls_s->next;
-		}
-		else
-		{
-			if (ls_s->separator == '|' || ls_s->separator == ';')
-				loop_sep = 0;
-			if (ls_s->separator == '&')
-				ls_l = ls_l->next, ls_s = ls_s->next;
-		}
-		if (ls_s != NULL && !loop_sep)
-			ls_s = ls_s->next;
-	}
-
-	*list_s = ls_s;
-	*list_l = ls_l;
-}
-
-/**
- * split_commands - Split a command line into separate commands.
- *
- * @datash: Pointer to the data structure.
- * @input:  Input string.
- *
- * Return:
- *   0 if successful, -1 if an error occurred.
- */
-int split_commands(data_shell *datash, char *input)
-{
-	sep_list *head_s, *list_s;
-	line_list *head_l, *list_l;
-	int loop;
-
-	head_s = NULL;
-	head_l = NULL;
-
-	add_nodes(&head_s, &head_l, input);
-
-	list_s = head_s;
-	list_l = head_l;
-
-	while (list_l != NULL)
-	{
-		datash->input = list_l->line;
-		datash->args = split_line(datash->input);
-		loop = exec_line(datash);
-		free(datash->args);
-
-		if (loop == 0)
-			break;
-
-		go_next(&list_s, &list_l, datash);
-
-		if (list_l != NULL)
-			list_l = list_l->next;
-	}
-
-	free_sep_list(&head_s);
-	free_line_list(&head_l);
-
-	if (loop == 0)
-		return (0);
-	return (1);
-}
-
-/**
- * split_line - Split a line into tokens.
- *
- * @input: Input string.
- *
- * Return:
- *   An array of tokens.
- */
-char **split_line(char *input)
-{
-	size_t bsize;
-	size_t i;
-	char **tokens;
-	char *token;
-
-	bsize = TOK_BUFSIZE;
-	tokens = malloc(sizeof(char *) * (bsize));
-	if (tokens == NULL)
-	{
-		write(STDERR_FILENO, ": allocation error\n", 18);
-		exit(EXIT_FAILURE);
-	}
-
-	token = _strtok(input, TOK_DELIM);
-	tokens[0] = token;
-
-	for (i = 1; token != NULL; i++)
-	{
-		if (i == bsize)
-		{
-			bsize += TOK_BUFSIZE;
-			tokens = _reallocdp(tokens, i, sizeof(char *) * bsize);
-			if (tokens == NULL)
-			{
-				write(STDERR_FILENO, ": allocation error\n", 18);
-				exit(EXIT_FAILURE);
-			}
-		}
-		token = _strtok(NULL, TOK_DELIM);
-		tokens[i] = token;
-	}
-
-	return (tokens);
+    if (!pathstr)
+        return (NULL);
+    if ((_strlen(cmd) > 2) && starts_with(cmd, "./"))
+    {
+        if (is_cmd(info, cmd))
+            return (cmd);  // Return the command as it is already a full path
+    }
+    while (1)
+    {
+        if (!pathstr[i] || pathstr[i] == ':')
+        {
+            path = dup_chars(pathstr, curr_pos, i);
+            if (!*path)
+                _strcat(path, cmd);
+            else
+            {
+                _strcat(path, "/");
+                _strcat(path, cmd);
+            }
+            if (is_cmd(info, path))
+                return (path);  // Return the full path if the command is found
+            if (!pathstr[i])
+                break;
+            curr_pos = i;
+        }
+        i++;
+    }
+    return (NULL);  // Return NULL if the command is not found in the PATH
 }
