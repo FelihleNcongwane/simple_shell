@@ -1,11 +1,11 @@
 #include "shell.h"
 
 /**
- * _myhistory - displays the history list, one command by line, preceded
- *              with line numbers, starting at 0.
- * @info: Structure containing potential arguments. Used to maintain
- *        constant function prototype.
- *  Return: Always 0
+ * Displays the history list, one command by line, preceded
+ * with line numbers, starting at 0.
+ * 
+ * @param info: Structure containing potential arguments.
+ * @return: Always 0.
  */
 int _myhistory(info_t *info)
 {
@@ -14,11 +14,11 @@ int _myhistory(info_t *info)
 }
 
 /**
- * unset_alias - sets alias to string
- * @info: parameter struct
- * @str: the string alias
- *
- * Return: Always 0 on success, 1 on error
+ * Unsets an alias by removing it from the alias linked list.
+ * 
+ * @param info: Parameter struct.
+ * @param str: The string alias.
+ * @return: 0 on success, 1 on error.
  */
 int unset_alias(info_t *info, char *str)
 {
@@ -37,11 +37,11 @@ int unset_alias(info_t *info, char *str)
 }
 
 /**
- * set_alias - sets alias to string
- * @info: parameter struct
- * @str: the string alias
- *
- * Return: Always 0 on success, 1 on error
+ * Sets an alias by adding it to the alias linked list.
+ * 
+ * @param info: Parameter struct.
+ * @param str: The string alias.
+ * @return: 0 on success, 1 on error.
  */
 int set_alias(info_t *info, char *str)
 {
@@ -58,10 +58,10 @@ int set_alias(info_t *info, char *str)
 }
 
 /**
- * print_alias - prints an alias string
- * @node: the alias node
- *
- * Return: Always 0 on success, 1 on error
+ * Prints an alias string.
+ * 
+ * @param node: The alias node to print.
+ * @return: 0 on success, 1 on error.
  */
 int print_alias(list_t *node)
 {
@@ -81,10 +81,10 @@ int print_alias(list_t *node)
 }
 
 /**
- * _myalias - mimics the alias builtin (man alias)
- * @info: Structure containing potential arguments. Used to maintain
- *          constant function prototype.
- *  Return: Always 0
+ * Mimics the alias builtin (man alias) by displaying aliases or setting new ones.
+ * 
+ * @param info: Structure containing potential arguments.
+ * @return: Always 0.
  */
 int _myalias(info_t *info)
 {
